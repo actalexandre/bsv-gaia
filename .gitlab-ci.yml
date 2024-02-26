@@ -9,4 +9,5 @@ deploy:
   script:
     - npm i -g pnpm
     - pnpm install
+    - npm run build
     - npx wrangler pages deploy ./dist --project-name=$PROJECT_NAME
