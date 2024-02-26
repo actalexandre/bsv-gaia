@@ -70,7 +70,7 @@ h1 {
   position: relative;
   tab-size: 1;
   outline: 0;
-  padding: 15px 10px;
+  padding: 15px 30px;
   caret-color: #444;
 }
 
@@ -80,7 +80,7 @@ h1 {
   position: absolute;
   text-overflow: ellipsis;
   top: 15px;
-  left: 10px;
+  left: 30px;
   font-size: 15px;
   user-select: none;
   display: inline-block;
@@ -748,4 +748,48 @@ i.right-align {
 
 i.justify-align {
   background-image: url(/images/icons/justify.svg);
+}
+
+i.palette {
+  background-image: url(images/icons/palette.svg);
+}
+
+i.bucket {
+  background-image: url(images/icons/paint-bucket.svg);
+}
+
+i.bold {
+  background-image: url(images/icons/type-bold.svg);
+}
+
+i.italic {
+  background-image: url(images/icons/type-italic.svg);
+}
+
+i.clear {
+  background-image: url(images/icons/trash.svg);
+}
+
+i.code {
+  background-image: url(images/icons/code.svg);
+}
+
+i.underline {
+  background-image: url(images/icons/type-underline.svg);
+}
+
+i.strikethrough {
+  background-image: url(images/icons/type-strikethrough.svg);
+}
+
+i.subscript {
+  background-image: url(images/icons/type-subscript.svg);
+}
+
+i.superscript {
+  background-image: url(images/icons/type-superscript.svg);
+}
+
+i.link {
+  background-image: url(images/icons/link.svg);
 }

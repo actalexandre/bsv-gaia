@@ -39,6 +39,7 @@ import {
   getDefaultCodeLanguage,
   getCodeLanguages
 } from "@lexical/code";
+import React from "react";
 
 const LowPriority = 1;
 
