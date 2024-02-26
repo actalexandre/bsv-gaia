@@ -85,7 +85,7 @@ function AIButton() {
   const [userInput, setUserInput] = useState("");
 
   const askAI = async () => {
-    const app = await client(import.meta.env.GRADIO_CLIENT_URL);
+    const app = await client(import.meta.env.VITE_APP_GRADIO_CLIENT_URL);
     const job = app.submit("/chat", [
       userInput,
       "unused" // not used but required for Gradio API
