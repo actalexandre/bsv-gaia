@@ -1,0 +1,12 @@
+stages:
+  - deploy
+
+deploy:
+  image: node:18-alpine
+  stage: deploy
+  variables:
+    PROJECT_NAME: bsv-gaia-ui
+  script:
+    - npm i -g pnpm
+    - pnpm install
+    - npx wrangler pages deploy ./dist --project-name=$PROJECT_NAME
