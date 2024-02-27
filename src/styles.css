@@ -751,57 +751,57 @@ i.justify-align {
 }
 
 i.palette {
-  background-image: url(images/icons/palette.svg);
+  background-image: url(/images/icons/palette.svg);
 }
 
 i.bucket {
-  background-image: url(images/icons/paint-bucket.svg);
+  background-image: url(/images/icons/paint-bucket.svg);
 }
 
 i.bold {
-  background-image: url(images/icons/type-bold.svg);
+  background-image: url(/images/icons/type-bold.svg);
 }
 
 i.italic {
-  background-image: url(images/icons/type-italic.svg);
+  background-image: url(/images/icons/type-italic.svg);
 }
 
 i.clear {
-  background-image: url(images/icons/trash.svg);
+  background-image: url(/images/icons/trash.svg);
 }
 
 i.code {
-  background-image: url(images/icons/code.svg);
+  background-image: url(/images/icons/code.svg);
 }
 
 i.underline {
-  background-image: url(images/icons/type-underline.svg);
+  background-image: url(/images/icons/type-underline.svg);
 }
 
 i.strikethrough {
-  background-image: url(images/icons/type-strikethrough.svg);
+  background-image: url(/images/icons/type-strikethrough.svg);
 }
 
 i.subscript {
-  background-image: url(images/icons/type-subscript.svg);
+  background-image: url(/images/icons/type-subscript.svg);
 }
 
 i.superscript {
-  background-image: url(images/icons/type-superscript.svg);
+  background-image: url(/images/icons/type-superscript.svg);
 }
 
 i.link {
-  background-image: url(images/icons/link.svg);
+  background-image: url(/images/icons/link.svg);
 }
 
 i.add-sign {
-  background-image: url(images/icons/add-sign.svg);
+  background-image: url(/images/icons/add-sign.svg);
 }
 i.plus {
-  background-image: url(images/icons/plus.svg);
+  background-image: url(/images/icons/plus.svg);
 }
 i.image {
-  background-image: url(images/icons/file-image.svg);
+  background-image: url(/images/icons/file-image.svg);
 }
 
 
