@@ -18,8 +18,12 @@ import {
   $isRangeSelection,
   $isTextNode,
   COMMAND_PRIORITY_LOW,
+  EditorState,
   FORMAT_TEXT_COMMAND,
+  KEY_ESCAPE_COMMAND,
   LexicalEditor,
+  NodeKey,
+  RangeSelection,
   SELECTION_CHANGE_COMMAND,
 } from 'lexical';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -29,6 +33,20 @@ import { createPortal } from 'react-dom';
 import { getDOMRangeRect } from '../../utils/getDOMRangeRect';
 import { getSelectedNode } from '../../utils/getSelectedNode';
 import { setFloatingElemPosition } from '../../utils/setFloatingElemPosition';
+import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin';
+import { LexicalComposer } from '@lexical/react/LexicalComposer';
+import { ContentEditable } from '@lexical/react/LexicalContentEditable';
+import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
+import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
+import { createDOMRange, createRectsFromDOMRange } from '@lexical/selection';
+import { $isRootTextContentEmpty, $rootTextContent } from '@lexical/text';
+import Button from '../../ui/Button';
+import exampleTheme from '../../themes/ExampleTheme';
+import Placeholder from '../../ui/Placeholder';
+import { PlainTextPlugin } from '@lexical/react/LexicalPlainTextPlugin';
+import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
+import { ClearEditorPlugin } from '@lexical/react/LexicalClearEditorPlugin';
+import { EditorRefPlugin } from '@lexical/react/LexicalEditorRefPlugin';
 
 function TextFormatFloatingToolbar({
   editor,
@@ -177,24 +195,36 @@ function TextFormatFloatingToolbar({
     );
   }, [editor, updateTextFormatFloatingToolbar]);
 
+  const [showAIPromptInput, setShowAIPromptInput] = useState(false);
+
   const askAI = () => {
     editor.update(() => {
       const selection = $getSelection();
-      const textContent = selection?.getTextContent()
-      
+      const textContent = selection?.getTextContent();
+      setShowAIPromptInput(true);
     });
   };
 
   return (
     <div ref={popupCharStylesEditorRef} className="floating-text-format-popup">
-      <button
+      {showAIPromptInput &&
+        createPortal(
+          <AIPromptInput
+            editor={editor}
+            cancelAddComment={() => {
+              // setShowAIPromptInput(false);
+            }}
+          ></AIPromptInput>,
+          document.body
+        )}
+      {/* <button
         type="button"
         className={'popup-item spaced ask-ai'}
         aria-label="Demander à l'IA"
         onClick={askAI}
       >
         Demander à l'IA
-      </button>
+      </button> */}
       {editor.isEditable() && (
         <>
           <button
@@ -405,4 +435,213 @@ export default function FloatingTextFormatToolbarPlugin({
 }): JSX.Element | null {
   const [editor] = useLexicalComposerContext();
   return useFloatingTextFormatToolbar(editor, anchorElem);
+}
+
+function useOnChange(
+  setContent: (text: string) => void,
+  setCanSubmit: (canSubmit: boolean) => void
+) {
+  return useCallback(
+    (editorState: EditorState, _editor: LexicalEditor) => {
+      editorState.read(() => {
+        setContent($rootTextContent());
+        setCanSubmit(!$isRootTextContentEmpty(_editor.isComposing(), true));
+      });
+    },
+    [setCanSubmit, setContent]
+  );
+}
+
+function AIPromptInput({
+  editor,
+  cancelAddComment,
+}: {
+  cancelAddComment: () => void;
+  editor: LexicalEditor;
+}) {
+  const [content, setContent] = useState('');
+  const [canSubmit, setCanSubmit] = useState(false);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const selectionState = React.useMemo(
+    () => ({
+      container: document.createElement('div'),
+      elements: [],
+    }),
+    []
+  );
+  const selectionRef = useRef<RangeSelection | null>(null);
+
+  const updateLocation = useCallback(() => {
+    editor.getEditorState().read(() => {
+      const selection = $getSelection();
+
+      if ($isRangeSelection(selection)) {
+        selectionRef.current = selection.clone();
+        const anchor = selection.anchor;
+        const focus = selection.focus;
+        const range = createDOMRange(
+          editor,
+          anchor.getNode(),
+          anchor.offset,
+          focus.getNode(),
+          focus.offset
+        );
+        const boxElem = boxRef.current;
+        if (range !== null && boxElem !== null) {
+          const { left, bottom, width } = range.getBoundingClientRect();
+          const selectionRects = createRectsFromDOMRange(editor, range);
+          let correctedLeft =
+            selectionRects.length === 1 ? left + width / 2 - 125 : left - 125;
+          if (correctedLeft < 10) {
+            correctedLeft = 10;
+          }
+          boxElem.style.left = `${correctedLeft}px`;
+          boxElem.style.top = `${
+            bottom +
+            20 +
+            (window.pageYOffset || document.documentElement.scrollTop)
+          }px`;
+          const selectionRectsLength = selectionRects.length;
+          const { container } = selectionState;
+          const elements: Array<HTMLSpanElement> = selectionState.elements;
+          const elementsLength = elements.length;
+
+          for (let i = 0; i < selectionRectsLength; i++) {
+            const selectionRect = selectionRects[i];
+            let elem: HTMLSpanElement = elements[i];
+            if (elem === undefined) {
+              elem = document.createElement('span');
+              elements[i] = elem;
+              container.appendChild(elem);
+            }
+            const color = '255, 212, 0';
+            const style = `position:absolute;top:${
+              selectionRect.top +
+              (window.pageYOffset || document.documentElement.scrollTop)
+            }px;left:${selectionRect.left}px;height:${
+              selectionRect.height
+            }px;width:${
+              selectionRect.width
+            }px;background-color:rgba(${color}, 0.3);pointer-events:none;z-index:5;`;
+            elem.style.cssText = style;
+          }
+          for (let i = elementsLength - 1; i >= selectionRectsLength; i--) {
+            const elem = elements[i];
+            container.removeChild(elem);
+            elements.pop();
+          }
+        }
+      }
+    });
+  }, [editor, selectionState]);
+
+  // React.useLayoutEffect(() => {
+  //   updateLocation();
+  //   const container = selectionState.container;
+  //   const body = document.body;
+  //   if (body !== null) {
+  //     body.appendChild(container);
+  //     return () => {
+  //       body.removeChild(container);
+  //     };
+  //   }
+  // }, [selectionState.container, updateLocation]);
+
+  const onEscape = (event: KeyboardEvent): boolean => {
+    event.preventDefault();
+    cancelAddComment();
+    return true;
+  };
+
+  const submitComment = () => {};
+
+  const onChange = useOnChange(setContent, setCanSubmit);
+
+  return (
+    <div className="CommentPlugin_CommentInputBox" ref={boxRef}>
+      <input
+        className="CommentPlugin_CommentInputBox_Editor"
+        // onEscape={onEscape}
+        onChange={() => {}}
+      />
+      <div className="CommentPlugin_CommentInputBox_Buttons">
+        <Button
+          onClick={cancelAddComment}
+          className="CommentPlugin_CommentInputBox_button"
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={submitComment}
+          disabled={!canSubmit}
+          className="CommentPlugin_CommentInputBox_Button primary"
+        >
+          Comment
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function EscapeHandlerPlugin({
+  onEscape,
+}: {
+  onEscape: (e: KeyboardEvent) => boolean;
+}): null {
+  const [editor] = useLexicalComposerContext();
+
+  useEffect(() => {
+    return editor.registerCommand(
+      KEY_ESCAPE_COMMAND,
+      (event: KeyboardEvent) => {
+        return onEscape(event);
+      },
+      2
+    );
+  }, [editor, onEscape]);
+
+  return null;
+}
+
+function PlainTextEditor({
+  className,
+  autoFocus,
+  onEscape,
+  onChange,
+  editorRef,
+  placeholder = 'Type a comment...',
+}: {
+  autoFocus?: boolean;
+  className?: string;
+  editorRef?: { current: null | LexicalEditor };
+  onChange: (editorState: EditorState, editor: LexicalEditor) => void;
+  onEscape: (e: KeyboardEvent) => boolean;
+  placeholder?: string;
+}) {
+  const initialConfig = {
+    namespace: 'Commenting',
+    nodes: [],
+    onError: (error: Error) => {
+      throw error;
+    },
+    theme: exampleTheme,
+  };
+
+  return (
+    <LexicalComposer initialConfig={initialConfig}>
+      <div className="CommentPlugin_CommentInputBox_EditorContainer">
+        <PlainTextPlugin
+          contentEditable={<ContentEditable className={className} />}
+          placeholder={<Placeholder>{placeholder}</Placeholder>}
+          ErrorBoundary={LexicalErrorBoundary}
+        />
+        <OnChangePlugin onChange={onChange} />
+        <HistoryPlugin />
+        {autoFocus !== false && <AutoFocusPlugin />}
+        <EscapeHandlerPlugin onEscape={onEscape} />
+        <ClearEditorPlugin />
+        {editorRef !== undefined && <EditorRefPlugin editorRef={editorRef} />}
+      </div>
+    </LexicalComposer>
+  );
 }

@@ -19,10 +19,10 @@ import AutoLinkPlugin from './plugins/AutoLinkPlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import {
   $getSelection,
-  $createTextNode,
   $createParagraphNode,
   $getRoot,
   $createLineBreakNode,
+  TextNode,
 } from 'lexical';
 import { client } from '@gradio/client';
 import { useState } from 'react';
@@ -30,6 +30,13 @@ import React from 'react';
 import DraggableBlockPlugin from './plugins/DraggableBlockPlugin';
 import ToolbarPlugin from './plugins/ToolbarPlugin';
 import FloatingTextFormatToolbarPlugin from './plugins/FloatingTextFormatToolbarPlugin';
+import { IconButton, TextField } from '@mui/material';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import { $getNodeByKey, $createTextNode } from 'lexical';
+import InlineImagePlugin from './plugins/InlineImagePlugin';
+import { InlineImageNode } from './nodes/InlineImageNode';
+import ImagesPlugin from './plugins/ImagesPlugin';
+import { ImageNode } from './nodes/ImageNode';
 
 function Placeholder() {
   return <div className="editor-placeholder">Enter some rich text...</div>;
@@ -56,6 +63,8 @@ const editorConfig = {
     TableRowNode,
     AutoLinkNode,
     LinkNode,
+    InlineImageNode,
+    ImageNode
   ],
 };
 
@@ -90,17 +99,22 @@ export default function Editor() {
           <ListPlugin />
           <LinkPlugin />
           <AutoLinkPlugin />
-          <FloatingTextFormatToolbarPlugin anchorElem={floatingAnchorElem}></FloatingTextFormatToolbarPlugin>
+          <FloatingTextFormatToolbarPlugin
+            anchorElem={floatingAnchorElem}
+          ></FloatingTextFormatToolbarPlugin>
           <ListMaxIndentLevelPlugin maxDepth={7} />
           <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
-          <AIButton></AIButton>
+          <InlineImagePlugin></InlineImagePlugin>
+          <ImagesPlugin></ImagesPlugin>
         </div>
+        <br></br>
+        <AIPromptInput></AIPromptInput>
       </div>
     </LexicalComposer>
   );
 }
 
-function AIButton() {
+function AIPromptInput() {
   const [editor] = useLexicalComposerContext();
 
   const [userInput, setUserInput] = useState('');
@@ -113,43 +127,52 @@ function AIButton() {
     ]);
     setUserInput('');
 
-    // editor.update(() => {
-    //   let root = $getRoot();
-    //   const paragraph = $createParagraphNode();
-    //   root.append(paragraph);
+    editor.update(() => {
+      let root = $getRoot();
+      const paragraph = $createParagraphNode();
+      root.append(paragraph);
+      const textNode = $createTextNode();
+      paragraph.append(textNode);
+    });
 
-    //   const textNode = $createTextNode();
-    //   paragraph.append(textNode);
+    job.on('data', (payload) => {
+      editor.update(() => {
+        const root = $getRoot();
+        root.selectEnd();
+        const selection = $getSelection();
+        selection?.insertText(payload.data[0]);
+      });
+    });
 
-    //   textNode.select();
-    // });
-
-    // job.on('data', (payload) => {
-    //   editor.update(() => {
-    //     let root = $getRoot();
-    //     root.selectEnd();
-    //     const selection = $getSelection();
-    //     selection.insertText(payload.data[0]);
-    //   });
-    // });
-
-    // job.on('status', (status) => {
-    //   if (status === 'completed') {
-    //     // do something on completion
-    //     textNode = null;
-    //   }
-    // });
+    job.on('status', (status) => {
+      if (status === 'completed') {
+        // do something on completion
+      }
+    });
   };
   return (
-    <>
-      <button type="submit" onClick={() => askAI()}>
-        Ask AI
-      </button>
-      <input
-        className="link-input"
+    <form
+      style={{ width: '100%', display: 'flex' }}
+      onSubmit={(event) => {
+        event.preventDefault();
+        askAI();
+      }}
+    >
+      <TextField
+        style={{ backgroundColor: 'white', flex: 1 }}
+        id="outlined-multiline-flexible"
+        className="bg-white"
+        label=""
+        multiline
         value={userInput}
-        onChange={(e) => setUserInput(e.target.value)}
-      ></input>
-    </>
+        onChange={(event) => {
+          setUserInput(event.target.value);
+        }}
+        // maxRows={40}
+      />
+      <IconButton type="submit">
+        <ArrowUpwardIcon />
+      </IconButton>
+    </form>
   );
 }
