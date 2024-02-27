@@ -42,9 +42,9 @@ import {
 import React from 'react';
 import { Box, Modal, Typography } from '@mui/material';
 import { DropDownItem } from '../ui/DropDown';
-import useModal from '../../../lexical-playground/src/hooks/useModal';
 import { InsertInlineImageDialog } from './InlineImagePlugin';
 import { InsertImageDialog } from './ImagesPlugin';
+import useModal from '../hooks/useModal';
 
 const LowPriority = 1;
 
